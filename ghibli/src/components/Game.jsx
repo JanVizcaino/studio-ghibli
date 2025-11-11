@@ -1,31 +1,65 @@
-import { useState } from 'react' 
+import { useEffect, useState } from 'react' 
+
+// Combinaciones ganadoras: filas, columnas y diagonales 
+const winLines = [ 
+  [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas 
+  [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas 
+  [0, 4, 8], [2, 4, 6]             // Diagonales 
+] 
+
+// Función que recibe el tablero (array de 9 posiciones) 
+// y devuelve 'X', 'O' o null según si alguien ha ganado 
+function checkWinner(board) { 
+  for (const [a, b, c] of winLines) { 
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) { 
+      return board[a] 
+    } 
+  } 
+  return null 
+} 
 
 export default function Game() { 
-  // 1) Estado del tablero: 9 casillas vacías (null). Representamos 3x3 como un array. 
+  // Estado del tablero y del turno 
   const [board, setBoard] = useState(Array(9).fill(null)) 
-
-  // 2) Estado del turno: empieza jugando "X" 
   const [turn, setTurn] = useState('X') 
 
-  // Al hacer clic en una casilla... 
+  // Calculamos ganador según el estado actual del tablero 
+  const winner = checkWinner(board) 
+
+  // Cambiamos título del documento en base a ganador o turno 
+  useEffect(() => { 
+    if (winner) { 
+      document.title = `Ganó ${winner} — Tres en Raya` 
+    } else { 
+      document.title = `Turno: ${turn} — Tres en Raya` 
+    } 
+  }, [winner, turn]) // se ejecuta cuando cambian winner o turn 
+
+  // Manejo de clic de cada casilla 
   function handleClick(index) { 
-    // Si la casilla ya está ocupada, no hacemos nada (regla simple). 
-    if (board[index] !== null) return 
+    // Si ya hay ganador o la casilla está ocupada, no hacemos nada 
+    if (winner || board[index] !== null) { 
+      return alert('Movimiento inválido. Reinicia para volver a jugar.') 
+    } 
 
-    // 1. Creamos una copia nueva del tablero (nunca mutar el estado directo). 
+    // Clonamos el tablero actual (nunca lo mutamos directamente) 
     const newBoard = [...board] 
-
-    // 2. Marcamos la casilla con "X" o "O" según el turno. 
     newBoard[index] = turn 
 
-    // 3. Guardamos el nuevo tablero en el estado. 
+    // ¿Hay ganador después de este movimiento? 
+    const possibleWinner = checkWinner(newBoard) 
+
+    if (possibleWinner) { 
+      setBoard(newBoard) // actualizamos el tablero 
+      return alert(`¡${possibleWinner} ha ganado!`) 
+    } 
+
+    // Si no hay ganador: actualizamos tablero y turno 
     setBoard(newBoard) 
-
-    // 4. Cambiamos de turno: si era X, pasa a O; si era O, pasa a X. 
     setTurn(prev => (prev === 'X' ? 'O' : 'X')) 
-  }
+  } 
 
-  // Reiniciar el juego a su estado inicial 
+  // Reiniciar el juego 
   function resetGame() { 
     setBoard(Array(9).fill(null)) 
     setTurn('X') 
@@ -33,13 +67,14 @@ export default function Game() {
 
   return ( 
     <section> 
-      <h2>Mini Tres en Raya</h2> 
-      <p>Turno actual: {turn}</p> 
+      <h2>Tres en Raya</h2> 
+      {!winner && <p>Turno actual: {turn}</p>} 
+      {winner && <p>¡Ganó {winner}!</p>} 
 
-      {/* Tablero 3x3 renderizado como 9 botones */} 
+      {/* Tablero visual como grid de 3x3 */} 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 60px)', 
+        gridTemplateColumns: 'repeat(3, 70px)', 
         gap: '10px', 
         margin: '1rem 0' 
       }}> 
@@ -47,18 +82,24 @@ export default function Game() {
           <button 
             key={index} 
             onClick={() => handleClick(index)} 
-            style={{ height: '60px', fontSize: '1.4rem' }} 
-          > 
+            style={{ 
+              height: '70px', 
+              fontSize: '1.6rem', 
+              cursor: 'pointer' 
+            }}> 
             {cell} 
           </button> 
         ))} 
       </div> 
 
+      {/* Botón para reiniciar */} 
       <button onClick={resetGame}>Reiniciar</button> 
 
-      <p style={{ marginTop: '1rem', color: '#666', fontSize: '.9rem' }}> 
-        useState guarda tablero y turno. Cada vez que cambian, React vuelve a pintar. 
+      <p style={{ marginTop: '1rem', color: '#666' }}> 
+        Aprendemos que <code>useState</code> guarda datos que sobreviven 
+        entre renders, y con <code>useEffect</code> reaccionamos a cambios 
+        para afectar al mundo exterior (como el título). 
       </p> 
     </section> 
   ) 
-}
+} 
