@@ -1,100 +1,86 @@
-import { useEffect, useMemo, useState } from 'react' 
-import CharacterCard from '../components/CharacterCard.jsx' 
-import useFilms from '../hooks/useFilms.js' 
+import { useEffect, useMemo, useState } from 'react'
+import CharacterCard from '../components/CharacterCard.jsx'
+import useFilms from '../hooks/useFilms.js'
 
-export default function Characters() { 
-  // 1) Traemos datos, estados y función reload desde el hook 
-  const { films, loading, error, reload } = useFilms() 
+export default function Characters() {
+  const { films, loading, error, reload } = useFilms()
+  const [search, setSearch] = useState('')
 
-  // 2) Estado para el término de búsqueda (input controlado) 
-  const [search, setSearch] = useState('') 
+  const SEARCH_KEY = 'ghibli_films_search_v1'
 
-  // 3) Clave para guardar el término en localStorage 
-  const SEARCH_KEY = 'ghibli_films_search_v1' 
+  useEffect(() => {
+    const saved = localStorage.getItem(SEARCH_KEY)
+    if (saved) setSearch(saved)
+  }, [])
 
-  // 4) Al montar la página, intentamos recuperar el último término buscado 
-  useEffect(() => { 
-    const saved = localStorage.getItem(SEARCH_KEY) 
-    if (saved) { 
-      setSearch(saved) // si había algo guardado, lo restauramos 
-    } 
-  }, []) 
+  useEffect(() => {
+    localStorage.setItem(SEARCH_KEY, search)
+  }, [search])
 
-  // 5) Cada vez que cambia "search", lo persistimos 
-  useEffect(() => { 
-    localStorage.setItem(SEARCH_KEY, search) 
-  }, [search]) 
+  function handleSearchChange(e) {
+    setSearch(e.target.value)
+  }
 
-  // 6) Manejador del input: guarda en estado lo que escribe el usuario 
-  function handleSearchChange(e) { 
-    // e.target.value = texto actual del input 
-    setSearch(e.target.value) 
-  } 
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (term === '') return films
+    return films.filter(film => film.name.toLowerCase().includes(term))
+  }, [films, search])
 
-  // 7) Filtro simple y claro (case-insensitive) 
-  //    - Normalizamos a minúsculas 
-  //    - Quitamos espacios sobrantes con trim() 
-  const filtered = useMemo(() => { 
-    const term = search.trim().toLowerCase() 
-    if (term === '') return films // sin filtro, devuelve todo 
+  if (loading) return <p className="text-center text-gray-600">Cargando películas…</p>
 
-    // Filtramos por "name" (que viene normalizado desde el hook) 
-    return films.filter(film => film.name.toLowerCase().includes(term)) 
-  }, [films, search]) 
+  if (error) {
+    return (
+      <section className="max-w-3xl mx-auto p-6">
+        <p className="text-red-500 mb-3">Error al cargar: {error.message}</p>
+        <button
+          onClick={reload}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+        >
+          Reintentar
+        </button>
+      </section>
+    )
+  }
 
-  if (loading) return <p>Cargando películas…</p> 
-  if (error) { 
-    return ( 
-      <section> 
-        <p>Error al cargar: {error.message}</p> 
-        <button onClick={reload}>Reintentar</button> 
-      </section> 
-    ) 
-  } 
+  return (
+    <section className="max-w-4xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">Películas de Studio Ghibli</h2>
 
-  return ( 
-    <section> 
-      <h2>Películas de Studio Ghibli</h2> 
+      {/* Barra de acciones */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por título…"
+          value={search}
+          onChange={handleSearchChange}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-label="Buscar películas por título"
+        />
 
-      {/* Barra de acciones: búsqueda y recargar */} 
-      <div style={{ display: 'flex', gap: '8px', margin: '12px 0' }}> 
-        {/* Input controlado: value muestra "search", onChange actualiza "search" */} 
-        <input 
-          type="text" 
-          placeholder="Buscar por título…" 
-          value={search} 
-          onChange={handleSearchChange} 
-          style={{ 
-            flex: 1, 
-            padding: '0.6rem', 
-            border: '1px solid #ddd', 
-            borderRadius: '6px', 
-            fontSize: '1rem' 
-          }} 
-          aria-label="Buscar películas por título" 
-        /> 
+        <button
+          onClick={reload}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Recargar
+        </button>
+      </div>
 
-        {/* Opción para pedir otra vez a la API si lo deseas */} 
-        <button onClick={reload}>Recargar</button> 
-      </div> 
+      <p className="text-sm text-gray-600 mb-3">
+        {search.trim() === ''
+          ? `Total: ${films.length} películas`
+          : `Coincidencias para "${search.trim()}": ${filtered.length} / ${films.length}`}
+      </p>
 
-      {/* Resumen didáctico: cuántas coinciden y si hay filtro activo */} 
-      <p style={{ marginBottom: '8px', color: '#555' }}> 
-        {search.trim() === '' 
-          ? `Total: ${films.length} películas` 
-          : `Coincidencias para "${search.trim()}": ${filtered.length} / ${films.length}`} 
-      </p> 
-
-      {/* Lista (ya filtrada) */} 
-      {filtered.length === 0 ? ( 
-        <p>No hay resultados para la búsqueda actual.</p> 
-      ) : ( 
-        <ul> 
-          {filtered.map((film) => ( 
-            <CharacterCard key={film.id} character={film} /> 
-          ))} 
-        </ul> 
-      )} 
-    </section> 
-  ) 
-} 
+      {filtered.length === 0 ? (
+        <p className="text-gray-500">No hay resultados para la búsqueda actual.</p>
+      ) : (
+        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map(film => (
+            <CharacterCard key={film.id} character={film} />
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}

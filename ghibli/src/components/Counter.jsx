@@ -21,30 +21,31 @@ export default function Counter() {
   ) 
 }*/
 
-import { useEffect, useState } from 'react' 
+import { useEffect, useState } from 'react'
 
-export default function Counter() { 
-  const [count, setCount] = useState(0) 
+export default function Counter() {
+  const [count, setCount] = useState(0)
 
-  // Efecto: cada vez que cambia count, cambiamos el título del documento. 
-  useEffect(() => { 
-    document.title = `Contador: ${count}` 
+  useEffect(() => {
+    document.title = `Contador: ${count}`
+  }, [count])
 
-    // Limpieza opcional (no necesaria en este ejemplo). 
-    // Retornar aquí una función si te suscribes a algo y quieres cancelar. 
-  }, [count]) // Dependencias: cuando cambia count, se ejecuta el efecto. 
-
-  function handleClick() { 
-    setCount(prev => prev + 1) 
+  function handleClick() {
+    setCount(prev => prev + 1)
   }
 
-  return ( 
-    <section> 
-      <strong>Contador:</strong> {count} 
-      <div> 
-        <button onClick={handleClick}>Sumar 1</button> 
-      </div> 
-    </section> 
-  ) 
-} 
+  return (
+    <section className="flex flex-col items-center justify-center bg-white rounded-2xl shadow-md p-6 max-w-sm mx-auto mt-10 transition hover:shadow-lg">
+      <h2 className="text-2xl font-bold text-gray-800 mb-3">
+        Contador: <span className="text-indigo-600">{count}</span>
+      </h2>
 
+      <button
+        onClick={handleClick}
+        className="px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 transition active:scale-95"
+      >
+        ➕ Sumar 1
+      </button>
+    </section>
+  )
+}
